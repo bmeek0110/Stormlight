@@ -2,21 +2,36 @@ import random
 
 class Game:
     def __init__(self):
+        self.player_health = 20
         self.location = "Shattered Plains"
         self.inventory = []
         self.highstorm_warning = False
         self.is_running = True
-        self.enemies = {"chasmfiend": {"health": 20, "damage": 5}}
+        self.enemies = {
+            "chasmfiend": {"health": 25, "damage": 6},
+            "voidbringer": {"health": 30, "damage": 8}
+        }
         self.current_enemy = None
-        self.quest_item = None
+        self.quest_items = []
+        self.quests = {
+            "lost_artifact": {"completed": False, "description": "Find the lost artifact."}
+        }
 
     def play(self):
         print("Welcome to the Stormlight Archive Adventure!")
         print("You are a budding Knight Radiant. Navigate through Roshar and uncover its secrets.")
         while self.is_running:
+            self.show_status()
             self.show_location()
             action = input("What do you want to do? ").lower()
             self.process_action(action)
+
+    def show_status(self):
+        print(f"\nYour health: {self.player_health}")
+        print(f"Inventory: {', '.join(self.inventory) if self.inventory else 'Empty'}")
+        for quest, details in self.quests.items():
+            status = "Completed" if details["completed"] else "In Progress"
+            print(f"{quest.capitalize()}: {status}")
 
     def show_location(self):
         if self.location == "Shattered Plains":
@@ -27,8 +42,8 @@ class Game:
         elif self.location == "Camp":
             print("\nYou are at the camp of the Alethi. Soldiers bustle about.")
             print("You can go 'north' back to the Shattered Plains or 'talk' to a soldier.")
-            if self.quest_item:
-                print("You can also 'give' the quest item to the soldier.")
+            if "lost artifact" in self.quest_items:
+                print("You can also 'give' the lost artifact to the soldier.")
         elif self.location == "Chasm":
             print("\nYou peer into a dark chasm. There's a faint light below.")
             print("You can go 'south' back to the Shattered Plains or 'climb' down.")
@@ -43,7 +58,10 @@ class Game:
             print("You can go 'north' back to Urithiru or 'climb' the tower.")
         elif self.location == "Chamber":
             print("\nYou've entered a hidden chamber in the tower.")
-            print("A chasmfiend lurks here! You can 'fight' it or 'flee' back to Urithiru.")
+            if self.current_enemy:
+                print(f"A {self.current_enemy} lurks here! You can 'fight' it or 'flee' back to Urithiru.")
+            else:
+                print("The chamber is empty, but there seems to be a faint glow in the corner.")
 
     def process_action(self, action):
         if action == "go south" and self.location == "Shattered Plains":
@@ -69,19 +87,20 @@ class Game:
         elif action == "climb" and self.location == "Tower":
             print("You climb the tower and discover a hidden chamber!")
             self.location = "Chamber"
-            self.current_enemy = "chasmfiend"
-            print("A chasmfiend appears! Prepare for battle!")
+            self.current_enemy = random.choice(list(self.enemies.keys()))
+            print(f"A {self.current_enemy} appears! Prepare for battle!")
         elif action == "read" and self.location == "Library":
             print("You read a book about the history of the Knights Radiant.")
         elif action == "fight" and self.current_enemy:
             self.fight_enemy()
         elif action == "flee" and self.current_enemy:
-            print("You flee back to Urithiru, escaping the chasmfiend.")
+            print("You flee back to Urithiru, escaping the enemy.")
             self.location = "Urithiru"
             self.current_enemy = None
-        elif action == "give" and self.location == "Camp" and self.quest_item:
-            print("You hand the quest item to the soldier. He thanks you!")
-            self.quest_item = None
+        elif action == "give" and self.location == "Camp" and "lost artifact" in self.quest_items:
+            print("You hand the lost artifact to the soldier. He thanks you and rewards you!")
+            self.quests["lost_artifact"]["completed"] = True
+            self.quest_items.remove("lost artifact")
         elif action == "check inventory":
             self.show_inventory()
         elif action == "quit":
@@ -92,9 +111,9 @@ class Game:
 
     def talk_to_soldier(self):
         print("The soldier tells you about the upcoming highstorm.")
-        if not self.quest_item:
+        if "lost artifact" not in self.quest_items:
             print("He mentions a lost artifact nearby. If you find it, he would reward you.")
-            self.quest_item = "lost artifact"
+            self.quest_items.append("lost artifact")
         else:
             print("You have already talked to the soldier about the artifact.")
 
@@ -105,21 +124,27 @@ class Game:
             print("Your inventory is empty.")
 
     def fight_enemy(self):
-        if self.current_enemy == "chasmfiend":
-            enemy_health = self.enemies[self.current_enemy]["health"]
-            player_damage = random.randint(3, 7)
+        enemy_health = self.enemies[self.current_enemy]["health"]
+        while self.player_health > 0 and enemy_health > 0:
+            player_damage = random.randint(4, 10)
             enemy_damage = self.enemies[self.current_enemy]["damage"]
 
-            print("You attack the chasmfiend!")
+            # Player attack
             enemy_health -= player_damage
-            print(f"You deal {player_damage} damage! Chasmfiend's health is now {enemy_health}.")
+            print(f"You attack the {self.current_enemy} and deal {player_damage} damage!")
+            print(f"{self.current_enemy}'s health is now {enemy_health}.")
 
             if enemy_health > 0:
-                print("The chasmfiend retaliates!")
-                print(f"It deals {enemy_damage} damage to you!")
-            else:
-                print("You have defeated the chasmfiend!")
-                self.current_enemy = None
+                # Enemy attack
+                self.player_health -= enemy_damage
+                print(f"The {self.current_enemy} attacks you and deals {enemy_damage} damage!")
+                print(f"Your health is now {self.player_health}.")
+        
+        if enemy_health <= 0:
+            print(f"You have defeated the {self.current_enemy}!")
+            self.current_enemy = None
+        elif self.player_health <= 0:
+            print("You have been defeated. Game over!")
 
 if __name__ == "__main__":
     game = Game()
