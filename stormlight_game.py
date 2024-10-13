@@ -2,20 +2,21 @@ import random
 
 class Game:
     def __init__(self):
-        self.player_health = 20
+        self.player_health = 30
         self.location = "Shattered Plains"
         self.inventory = []
         self.highstorm_warning = False
         self.is_running = True
         self.enemies = {
-            "chasmfiend": {"health": 25, "damage": 6},
-            "voidbringer": {"health": 30, "damage": 8}
+            "chasmfiend": {"health": 25, "damage": 5},
+            "voidbringer": {"health": 30, "damage": 7}
         }
         self.current_enemy = None
-        self.quest_items = []
         self.quests = {
-            "lost_artifact": {"completed": False, "description": "Find the lost artifact."}
+            "lost_artifact": {"completed": False, "description": "Find the lost artifact.", "location": "Chasm"},
+            "rescue_soldier": {"completed": False, "description": "Rescue a soldier trapped in the Chasm.", "location": "Chasm"}
         }
+        self.shelter_found = False
 
     def play(self):
         print("Welcome to the Stormlight Archive Adventure!")
@@ -41,12 +42,14 @@ class Game:
                 print("A warning bell sounds! A highstorm is approaching!")
         elif self.location == "Camp":
             print("\nYou are at the camp of the Alethi. Soldiers bustle about.")
-            print("You can go 'north' back to the Shattered Plains or 'talk' to a soldier.")
-            if "lost artifact" in self.quest_items:
+            print("You can go 'north' back to the Shattered Plains, 'talk' to a soldier, or check for 'quests'.")
+            if "lost artifact" in self.inventory:
                 print("You can also 'give' the lost artifact to the soldier.")
         elif self.location == "Chasm":
             print("\nYou peer into a dark chasm. There's a faint light below.")
             print("You can go 'south' back to the Shattered Plains or 'climb' down.")
+            if self.quests["rescue_soldier"]["completed"]:
+                print("You have rescued the soldier!")
         elif self.location == "Urithiru":
             print("\nYou have entered the ancient city of Urithiru, filled with secrets.")
             print("Explore 'north' (the library) or 'south' (the tower).")
@@ -97,12 +100,12 @@ class Game:
             print("You flee back to Urithiru, escaping the enemy.")
             self.location = "Urithiru"
             self.current_enemy = None
-        elif action == "give" and self.location == "Camp" and "lost artifact" in self.quest_items:
+        elif action == "give" and self.location == "Camp" and "lost artifact" in self.inventory:
             print("You hand the lost artifact to the soldier. He thanks you and rewards you!")
+            self.inventory.remove("lost artifact")
             self.quests["lost_artifact"]["completed"] = True
-            self.quest_items.remove("lost artifact")
-        elif action == "check inventory":
-            self.show_inventory()
+        elif action == "quests":
+            self.show_quests()
         elif action == "quit":
             print("Thanks for playing!")
             self.is_running = False
@@ -111,22 +114,21 @@ class Game:
 
     def talk_to_soldier(self):
         print("The soldier tells you about the upcoming highstorm.")
-        if "lost artifact" not in self.quest_items:
+        if "lost artifact" not in self.inventory:
             print("He mentions a lost artifact nearby. If you find it, he would reward you.")
-            self.quest_items.append("lost artifact")
+            self.inventory.append("lost artifact")
         else:
             print("You have already talked to the soldier about the artifact.")
 
-    def show_inventory(self):
-        if self.inventory:
-            print("Your inventory contains: " + ", ".join(self.inventory))
-        else:
-            print("Your inventory is empty.")
+    def show_quests(self):
+        for quest, details in self.quests.items():
+            status = "Completed" if details["completed"] else "In Progress"
+            print(f"{quest.capitalize()}: {details['description']} - Status: {status}")
 
     def fight_enemy(self):
         enemy_health = self.enemies[self.current_enemy]["health"]
         while self.player_health > 0 and enemy_health > 0:
-            player_damage = random.randint(4, 10)
+            player_damage = random.randint(5, 10)
             enemy_damage = self.enemies[self.current_enemy]["damage"]
 
             # Player attack
@@ -145,6 +147,7 @@ class Game:
             self.current_enemy = None
         elif self.player_health <= 0:
             print("You have been defeated. Game over!")
+            self.is_running = False
 
 if __name__ == "__main__":
     game = Game()
